@@ -1,0 +1,43 @@
+{
+  "name": "obvious-vue",
+  "version": "0.0.0",
+  "description": "a library to help using obvious in vue2.x application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ObviousJs/obvious-vue.git"
+  },
+  "keywords": [
+    "vue",
+    "obvious"
+  ],
+  "author": "philip Lau",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ObviousJs/obvious-vue/issues"
+  },
+  "homepage": "https://github.com/ObviousJs/obvious-vue#readme",
+  "peerDependencies": {
+    "vue": "^2.6.12"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.3",
+    "@babel/preset-env": "^7.12.1",
+    "babel-loader": "^8.2.1",
+    "eslint": "^7.12.1",
+    "eslint-config-standard": "^16.0.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-vue": "^7.1.0",
+    "vue": "^2.6.12",
+    "vue-loader": "^15.9.5",
+    "vue-template-compiler": "^2.6.12",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^4.1.0",
+    "webpack-dev-server": "^3.11.0"
+  }
+}
