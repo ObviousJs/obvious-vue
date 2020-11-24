@@ -1,4 +1,5 @@
 import { isObject } from './mixin'
+import { Errors } from './util'
 
 const EVENT_TYPE = {
   BROADCAST: 'Broadcast',
@@ -17,10 +18,10 @@ const formatObData = (obData) => {
       if (value.state) {
         result[key] = value
       } else {
-        // TODO: error hint
+        throw new Error(Errors.stateIsRequired(key))
       }
     } else {
-      // TODO: error hint
+      throw new Error(Errors.wrongObDataType(key, typeof value))
     }
   }
   return result
@@ -40,10 +41,11 @@ const formatEvents = (events, context) => {
       }
     } else {
       const socket = value.socket ?? context.$options.obvious.socket ?? context.$socket
-      const handler = value.handler.bind(context)
       result[key] = {
         socket,
-        handler
+        handler: (...args) => {
+          value.handler.call(context, ...args)
+        }
       }
     }
   }
@@ -70,20 +72,17 @@ const injectObData = (dataOption, dataName, socket, state) => {
   dataOption[dataName] = dataValue
 }
 
-const injectObDataWatch = (watchOption, dataName, socket, state) => {
+const injectObDataWatcher = (watchOption, dataName, socket, state) => {
   const rootStateName = state.split('.')[0]
   const handler = (newValue) => {
     socket.waitState([rootStateName]).then(() => {
       socket.setState(state, newValue)
     })
   }
-  watchOption[dataName] = {
-    handler,
-    deep: true
-  }
+  watchOption[dataName] = handler
 }
 
-const injectStateWatch = (dataName, socket, state, context) => {
+const injectStateWatcher = (dataName, socket, state, context) => {
   context.$nextTick(() => {
     const rootStateName = state.split('.')[0]
     socket.waitState([rootStateName]).then(() => {
@@ -92,7 +91,7 @@ const injectStateWatch = (dataName, socket, state, context) => {
           context[dataName] = newValue
         }
       }
-      context.$obHandler[state] = {
+      context.$obStateWatcher[state] = {
         socket,
         handler
       }
@@ -112,7 +111,7 @@ const listenEvents = (type, events, context) => {
 
 export default {
   beforeCreate () {
-    this.$obHandler = {}
+    this.$obStateWatcher = {}
     const { data: originalData, watch: originalWatch, obvious } = this.$options
     if (isObject(obvious)) {
       const dataOption = initNewData(originalData)
@@ -131,9 +130,17 @@ export default {
           const { state, socket: stateSocket } = obData[dataName]
           const socket = stateSocket ?? componentSocket ?? this.$socket
           injectObData(dataOption, dataName, socket, state)
-          injectObDataWatch(watchOption, dataName, socket, state, this)
-          injectStateWatch(dataName, socket, state, this)
+          injectObDataWatcher(watchOption, dataName, socket, state)
+          injectStateWatcher(dataName, socket, state, this)
         })
+        if (typeof originalData === 'function') {
+          this.$options.data = function () {
+            return dataOption
+          }
+        } else if (isObject(originalData)) {
+          this.$options.data = dataOption
+        }
+        this.$options.watch = watchOption
       }
 
       // listen broadcast
@@ -150,10 +157,10 @@ export default {
     }
   },
 
-  destroyed () {
+  beforeDestroy () {
     // clear obvious state watcher
-    Object.keys(this.$obHandler).forEach((stateName) => {
-      const { socket, handler } = this.$obHandler[stateName]
+    Object.keys(this.$obStateWatcher).forEach((stateName) => {
+      const { socket, handler } = this.$obStateWatcher[stateName]
       socket.unwatchState(stateName, handler)
     })
     // clear broadcast event handler
