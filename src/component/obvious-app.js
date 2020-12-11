@@ -43,6 +43,9 @@ export default {
 
   created () {
     this._bus_ = this.bus ?? this.$bus
+  },
+
+  mounted () {
     this._bus_.activateApp(this.name, {
       ...this.activateConfig,
       mountPoint: this.$refs.mountPoint

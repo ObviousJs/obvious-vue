@@ -1,15 +1,15 @@
-import Vue from 'vue'
 import mixin from './lib/mixin'
 import ObviousApp from './component/obvious-app'
+import { Errors } from './lib/util'
 
 export default {
-  install (option) {
-    const { bus, socket } = option
+  install (Vue, option) {
+    const { bus } = option
     if (!bus) {
-      // TODO: throw error
+      throw new Error(Errors.busIsRequired())
     }
     Vue.prototype.$bus = bus
-    Vue.prototype.$socket = socket ?? bus.createSocket()
+    Vue.prototype.$socket = bus.createSocket()
     Vue.mixin(mixin)
     Vue.component('obvious-app', ObviousApp)
   }

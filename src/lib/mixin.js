@@ -1,5 +1,4 @@
-import { isObject } from './mixin'
-import { Errors } from './util'
+import { Errors, isObject } from './util'
 
 const EVENT_TYPE = {
   BROADCAST: 'Broadcast',
@@ -36,7 +35,8 @@ const formatEvents = (events, context) => {
       result[key] = {
         socket,
         handler: (...args) => {
-          value.call(context, ...args)
+          const result = value.call(context, ...args)
+          return result
         }
       }
     } else {
@@ -44,7 +44,7 @@ const formatEvents = (events, context) => {
       result[key] = {
         socket,
         handler: (...args) => {
-          value.handler.call(context, ...args)
+          return value.handler.call(context, ...args)
         }
       }
     }
@@ -79,17 +79,19 @@ const injectObDataWatcher = (watchOption, dataName, socket, state) => {
       socket.setState(state, newValue)
     })
   }
-  watchOption[dataName] = handler
+  watchOption[dataName] = {
+    handler,
+    deep: true
+  }
 }
 
 const injectStateWatcher = (dataName, socket, state, context) => {
   context.$nextTick(() => {
     const rootStateName = state.split('.')[0]
     socket.waitState([rootStateName]).then(() => {
-      const handler = (newValue, oldValue) => {
-        if (newValue !== oldValue) {
-          context[dataName] = newValue
-        }
+      context[dataName] = socket.getState(state)
+      const handler = (newValue) => {
+        context[dataName] = newValue
       }
       context.$obStateWatcher[state] = {
         socket,
@@ -100,19 +102,18 @@ const injectStateWatcher = (dataName, socket, state, context) => {
   })
 }
 
-const listenEvents = (type, events, context) => {
-  context.$nextTick(() => {
-    Object.keys(events).forEach((eventName) => {
-      const { handler, socket } = events[eventName]
-      socket[`on${type}`](eventName, handler)
-    })
+const listenEvents = (type, events) => {
+  Object.keys(events).forEach((eventName) => {
+    const { handler, socket } = events[eventName]
+    socket[`on${type}`](eventName, handler)
   })
 }
 
 export default {
   beforeCreate () {
     this.$obStateWatcher = {}
-    const { data: originalData, watch: originalWatch, obvious } = this.$options
+    const { data: originalData, watch: originalWatch, obvious: _obvious } = this.$options
+    const obvious = typeof _obvious === 'function' ? _obvious.call(this) : _obvious
     if (isObject(obvious)) {
       const dataOption = initNewData(originalData)
       const watchOption = originalWatch ? { ...originalWatch } : {}
@@ -125,7 +126,7 @@ export default {
 
       // inject data and watch
       if (isObject(originalObData)) {
-        const obData = formatObData(originalData)
+        const obData = formatObData(originalObData)
         Object.keys(obData).forEach((dataName) => {
           const { state, socket: stateSocket } = obData[dataName]
           const socket = stateSocket ?? componentSocket ?? this.$socket
@@ -133,12 +134,12 @@ export default {
           injectObDataWatcher(watchOption, dataName, socket, state)
           injectStateWatcher(dataName, socket, state, this)
         })
-        if (typeof originalData === 'function') {
+        if (isObject(originalData)) {
+          this.$options.data = dataOption
+        } else {
           this.$options.data = function () {
             return dataOption
           }
-        } else if (isObject(originalData)) {
-          this.$options.data = dataOption
         }
         this.$options.watch = watchOption
       }
@@ -159,17 +160,17 @@ export default {
 
   beforeDestroy () {
     // clear obvious state watcher
-    Object.keys(this.$obStateWatcher).forEach((stateName) => {
+    isObject(this.$obStateWatcher) && Object.keys(this.$obStateWatcher).forEach((stateName) => {
       const { socket, handler } = this.$obStateWatcher[stateName]
       socket.unwatchState(stateName, handler)
     })
     // clear broadcast event handler
-    Object.keys(this.$broadcastEvents).forEach((eventName) => {
+    isObject(this.$broadcastEvents) && Object.keys(this.$broadcastEvents).forEach((eventName) => {
       const { socket, handler } = this.$broadcastEvents[eventName]
       socket.offBroadcast(eventName, handler)
     })
     // clear unicast event handler
-    Object.keys(this.$unicastEvents).forEach((eventName) => {
+    isObject(this.$unicastEvents) && Object.keys(this.$unicastEvents).forEach((eventName) => {
       const { socket, handler } = this.$unicastEvents[eventName]
       socket.offUnicast(eventName, handler)
     })
