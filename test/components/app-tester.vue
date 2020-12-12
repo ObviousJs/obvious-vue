@@ -1,8 +1,8 @@
 <template>
   <obvious-app
     name="test-app"
-    :activate-config="{activateConfig}"
-    :destroy-config="{destroyConfig}"
+    :activate-config="{ activateCount }"
+    :destroy-config="{ message: destroyMessage }"
   />
 </template>
 
@@ -12,13 +12,8 @@ export default {
 
   data () {
     return {
-      activateConfig: {
-        activateCount: 1
-      },
-
-      desctroyConfig: {
-        message: 'app has been destroyed'
-      }
+      activateCount: 1,
+      destroyMessage: 'destroyed'
     }
   }
 }

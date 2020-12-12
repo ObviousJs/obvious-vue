@@ -15,7 +15,7 @@ describe('Test obvious.data option', () => {
   globalWatcherSocket.initState('user', {
     name: 'mike'
   })
-  test('# case 1: test state socket and global socket', async () => {
+  test('# case 1: indicate state socket and global socket', async () => {
     const wrapper = mount(StateTester1, { localVue })
     await localVue.nextTick()
     expect(wrapper.vm.theme).toEqual(localWatcherSocket.getState('theme'))
@@ -47,18 +47,20 @@ describe('Test obvious.data option', () => {
     expect(wrapper.find('#user').text()).toEqual(globalWatcherSocket.getState('user.name'))
   })
 
-  test('# case 2: test state socket and global socket', async () => {
+  test('# case 2: indicate state socket and component socket', async () => {
     const wrapper = mount(StateTester2, { localVue })
     globalWatcherSocket.setState('user.gender', 'female')
     localWatcherSocket.initState('count', 1)
     await localVue.nextTick()
-    console.log = jest.fn()
     expect(wrapper.vm.count).toEqual(localWatcherSocket.getState('count'))
     expect(wrapper.vm.gender).toEqual(globalWatcherSocket.getState('user.gender'))
+
+    console.log = jest.fn()
     localWatcherSocket.watchState('count', (value) => {
       console.log(value)
     })
     globalWatcherSocket.watchState('user.gender', (value) => {
+      console.warn(value)
       console.log(value)
     })
     await wrapper.setData({
@@ -68,9 +70,8 @@ describe('Test obvious.data option', () => {
     expect(console.log).toHaveBeenCalledTimes(2)
     expect(console.log).toHaveBeenCalledWith(2)
     expect(console.log).toHaveBeenCalledWith('male')
-
-    globalWatcherSocket.setState('user', { gender: 'male' })
-    expect(wrapper.vm.gender).toEqual('male')
+    globalWatcherSocket.setState('user', { gender: 'none' })
+    expect(wrapper.vm.gender).toEqual('none')
     await localVue.nextTick()
     expect(wrapper.find('#gender').text()).toEqual(globalWatcherSocket.getState('user').gender)
   })

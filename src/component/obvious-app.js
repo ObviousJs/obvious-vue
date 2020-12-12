@@ -12,11 +12,11 @@ export default {
     },
     activateConfig: {
       type: Object,
-      default: {}
+      default: () => {}
     },
     destroyConfig: {
       type: Object,
-      default: {}
+      default: () => {}
     }
   },
 
@@ -49,6 +49,10 @@ export default {
     this._bus_.activateApp(this.name, {
       ...this.activateConfig,
       mountPoint: this.$refs.mountPoint
+    }).then(() => {
+      this.$emit('activated')
+    }).catch((err) => {
+      this.$emit('error', err)
     })
   },
 
@@ -56,8 +60,16 @@ export default {
     this._bus_.destroyApp(this.name, {
       ...this.destroyConfig,
       mountPoint: this.$refs.mountPoint
+    }).then(() => {
+      this.$emit('destroyed')
+    }).catch((err) => {
+      this.$emit('error', err)
     })
   },
 
-  template: '<div ref="mountPoint"></div>'
+  render (h) {
+    return h('div', {
+      ref: 'mountPoint'
+    })
+  }
 }
