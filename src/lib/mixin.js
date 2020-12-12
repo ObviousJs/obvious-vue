@@ -79,10 +79,19 @@ const injectObDataWatcher = (watchOption, dataName, socket, state, context) => {
     originalWatcher = originalWatcher.handler
   }
   const handler = (newValue, oldValue) => {
-    typeof originalWatcher === 'function' && originalWatcher.call(context, newValue, oldValue)
-    socket.waitState([rootStateName]).then(() => {
-      socket.setState(state, newValue)
-    })
+    if (context.$obStateWatcher && !context.$obStateWatcher[state]?.stateChanged) {
+      typeof originalWatcher === 'function' && originalWatcher.call(context, newValue, oldValue)
+      const { socket, handler } = context.$obStateWatcher[state]
+      socket.waitState([rootStateName]).then(() => {
+        socket.unwatchState(state, handler)
+        socket.setState(state, newValue)
+        socket.watchState(state, handler)
+      })
+    }
+
+    if (context.$obStateWatcher) {
+      context.$obStateWatcher[state].stateChanged = false
+    }
   }
   watchOption[dataName] = {
     handler,
@@ -96,11 +105,13 @@ const injectStateWatcher = (dataName, socket, state, context) => {
     socket.waitState([rootStateName]).then(() => {
       context[dataName] = socket.getState(state)
       const handler = (newValue) => {
+        context.$obStateWatcher[state].stateChanged = true
         context[dataName] = newValue
       }
       context.$obStateWatcher[state] = {
         socket,
-        handler
+        handler,
+        stateChanged: false
       }
       socket.watchState(state, handler)
     })
