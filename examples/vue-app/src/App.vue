@@ -1,37 +1,50 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld v-bind:msg="text"/>
+  <div class="app-container">
+    <obvious-app v-if="showReactApp" name="react-app" />
+    <div id="app">
+      <img alt="Vue logo" src="./assets/logo.png">
+      <div :style="{display: 'flex', justifyContent: 'center'}">
+        <button class="button" v-if="!showReactApp" @click="showReactApp = true">Show React App</button>
+      </div>
+      <HelloWorld :msg="text"/>
+    </div>
   </div>
 </template>
 
 <script>
+/* eslint-disable */ 
 import HelloWorld from './components/HelloWorld.vue';
-import {getBus} from 'obvious-core';
-
-const bus = getBus('host');
-const socket = bus.createSocket();
 
 export default {
   name: 'App',
+
   components: {
     HelloWorld
   },
-  data: function() {
+
+  data() {
     return {
-      text: ''
+      showReactApp: true
     }
   },
-  methods:{
+
+  obvious() {
+    return {
+      data: {
+        text: 'text'
+      },
+      broadcast: {
+        setReactAreaVisible(visible) {
+          this.showReactApp = visible
+        }
+      }
+    }
+  },
+
+  methods: {
     changeText: function(text){
       this.text = text;
     }
-  },
-  created: function() {
-    socket.waitState(['text']).then((state) => {
-        this.changeText(state.text);
-        socket.watchState('text', this.changeText);
-    });
   }
 }
 </script>
@@ -45,5 +58,28 @@ export default {
   color: #2c3e50;
   margin-top: 60px;
   flex: 1;
+}
+
+.app-container {
+  display: flex
+}
+
+.app-container>div {
+  flex: 1
+}
+
+.button {
+  border: none;
+  outline: none;
+  width: 13rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: white;
+  background: #42b983
+}
+
+.button:hover {
+  opacity: 0.8
 }
 </style>

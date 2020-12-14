@@ -11,25 +11,10 @@ const bus = createBus('host', {
     },
     'vue-app': {
         js: [
-            'http://localhost:8081/js/app.js',
-            'http://localhost:8081/js/chunk-vendors.js'
+            'http://localhost:8080/js/app.js',
+            'http://localhost:8080/js/chunk-vendors.js'
         ]
     }
 });
 
-bus.createApp('unit-app')
-    .relyOn([
-        {
-            'vue-app': { mountPoint: '#vue-app' }
-        },
-        {
-            'react-app': { mountPoint: '#react-app'}
-        }
-    ])
-    .bootstrap(async () => {
-        setTimeout(() => {
-            alert('I can not wait to star obvious.js');
-        }, 2000);
-    });
-
-bus.activateApp('unit-app');
+bus.activateApp('vue-app', { mountPoint: document.getElementById('vue-app') });

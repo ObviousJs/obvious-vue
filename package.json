@@ -4,7 +4,11 @@
   "description": "a library to help using obvious in vue2.x application",
   "main": "index.js",
   "scripts": {
-    "test": "jest --coverage"
+    "test": "jest --coverage",
+    "demo:install": "cd ./examples/react-app && npm install && cd ../vue-app && npm install && cd ../host-enviroment && npm install",
+    "demo:react": "cd ./examples/react-app && npm run start",
+    "demo:vue": "cd ./examples/vue-app && npm run serve",
+    "demo:host": "cd ./examples/host-enviroment && npm start"
   },
   "repository": {
     "type": "git",

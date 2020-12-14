@@ -1,9 +1,8 @@
 import React from 'react';
 import logo from './logo.svg';
-import { getBus } from 'obvious-core';
 import './App.css';
 
-const bus = getBus('host');
+const bus = window.__Bus__.host;
 const socket = bus.createSocket();
 
 function App() {
@@ -12,7 +11,9 @@ function App() {
   const inputRef = React.useRef(null);
 
   React.useEffect(() => {
-    socket.initState('text', 'Hello Obvious');
+    if (socket.getState('text') === undefined) {
+      socket.initState('text', 'Hello Obvious');
+    }
     const changeRotate = (rotate) => {
       if (rotate) {
         setLogoClass('App-logo rotate');
@@ -35,6 +36,10 @@ function App() {
     setText(e.target.value);
     socket.setState('text', e.target.value);
   }
+
+  const handleOnHide = () => {
+    socket.broadcast('setReactAreaVisible', false)
+  }
   
   return (
     <div className="App">
@@ -52,6 +57,9 @@ function App() {
         >
           Learn React
         </a>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button onClick={handleOnHide}>Hide React App</button>
+        </div>
       </header>
     </div>
   );

@@ -19,12 +19,14 @@ export default {
     }
   },
 
-  obvious: {
-    data: {
-      user: 'user.name',
-      theme: {
-        state: 'theme',
-        socket: localSocket
+  obvious () {
+    return {
+      data: {
+        user: 'user.name',
+        theme: {
+          state: 'theme',
+          socket: localSocket
+        }
       }
     }
   },

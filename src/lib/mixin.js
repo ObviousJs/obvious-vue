@@ -81,7 +81,7 @@ const injectObDataWatcher = (watchOption, dataName, socket, state, context) => {
   const handler = (newValue, oldValue) => {
     if (context.$obStateWatcher && !context.$obStateWatcher[state]?.stateChanged) {
       typeof originalWatcher === 'function' && originalWatcher.call(context, newValue, oldValue)
-      const { socket, handler } = context.$obStateWatcher[state]
+      const { handler } = context.$obStateWatcher[state]
       socket.waitState([rootStateName]).then(() => {
         socket.unwatchState(state, handler)
         socket.setState(state, newValue)
@@ -129,7 +129,10 @@ export default {
   beforeCreate () {
     this.$obStateWatcher = {}
     const { data: originalData, watch: originalWatch, obvious: _obvious } = this.$options
-    const obvious = typeof _obvious === 'function' ? _obvious.call(this) : _obvious
+    if (_obvious && typeof _obvious !== 'function') {
+      throw new Error(Errors.obviousIsNotFunction())
+    }
+    const obvious = _obvious && _obvious.call(this)
     if (isObject(obvious)) {
       const dataOption = initNewData(originalData)
       const watchOption = originalWatch ? { ...originalWatch } : {}
@@ -190,5 +193,8 @@ export default {
       const { socket, handler } = this.$unicastEvents[eventName]
       socket.offUnicast(eventName, handler)
     })
+    this.$obStateWatcher = null
+    this.$broadcastEvents = null
+    this.$unicastEvents = null
   }
 }

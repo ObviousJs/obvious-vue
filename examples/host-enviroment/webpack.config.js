@@ -17,10 +17,7 @@ module.exports = () => {
         devtool: 'source-map',
         plugins,
         resolve: {
-            extensions: ['.tsx', '.ts', '.jsx', '.js'],
-            alias: {
-                'obvious-core': path.join(__dirname, '../../src/')
-            }
+            extensions: ['.tsx', '.ts', '.jsx', '.js']
         },
         module: {
             rules: [
