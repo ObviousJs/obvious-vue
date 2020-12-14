@@ -5,7 +5,7 @@ const EVENT_TYPE = {
   UNICAST: 'Unicast'
 }
 
-const formatObData = (obData) => {
+export const formatObData = (obData) => {
   const result = {}
   for (const key of Object.keys(obData)) {
     const value = obData[key]
