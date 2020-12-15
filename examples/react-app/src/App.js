@@ -13,6 +13,8 @@ function App() {
   React.useEffect(() => {
     if (socket.getState('text') === undefined) {
       socket.initState('text', 'Hello Obvious');
+    } else {
+      socket.setState('text', 'Hello Obvious');
     }
     const changeRotate = (rotate) => {
       if (rotate) {
