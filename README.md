@@ -1,4 +1,6 @@
 # obvious-vue
+[![Coverage Status](https://coveralls.io/repos/github/ObviousJs/obvious-vue/badge.svg?branch=main)](https://coveralls.io/github/ObviousJs/obvious-vue?branch=main) [![release](https://img.shields.io/github/release/ObviousJs/obvious-vue.svg)](https://github.com/ObviousJs/obvious-vue/releases) [![lastCommit](https://img.shields.io/github/last-commit/ObviousJs/obvious-vue)](https://github.com/ObviousJs/obvious-vue/commits/master)
+
 在Vue应用中使用[obvious](https://github.com/ObviousJs/obvious-core)的第三方库
 
 ## 安装
