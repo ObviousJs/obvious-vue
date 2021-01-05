@@ -74,13 +74,8 @@ const injectObData = (dataOption, dataName, socket, state) => {
 
 const injectObDataWatcher = (watchOption, dataName, socket, state, context) => {
   const rootStateName = state.split('.')[0]
-  let originalWatcher = watchOption[dataName]
-  if (isObject(originalWatcher) && typeof originalWatcher.handler === 'function') {
-    originalWatcher = originalWatcher.handler
-  }
   const handler = (newValue, oldValue) => {
     if (context.$obStateWatcher && !context.$obStateWatcher[state]?.stateChanged) {
-      typeof originalWatcher === 'function' && originalWatcher.call(context, newValue, oldValue)
       const { handler } = context.$obStateWatcher[state]
       socket.waitState([rootStateName]).then(() => {
         socket.unwatchState(state, handler)
@@ -93,10 +88,13 @@ const injectObDataWatcher = (watchOption, dataName, socket, state, context) => {
       context.$obStateWatcher[state].stateChanged = false
     }
   }
-  watchOption[dataName] = {
+  const newWatchOption = [{
     handler,
     deep: true
-  }
+  }]
+  const originalWatcher = watchOption[dataName]
+  originalWatcher && newWatchOption.push(originalWatcher)
+  watchOption[dataName] = newWatchOption
 }
 
 const injectStateWatcher = (dataName, socket, state, context) => {
