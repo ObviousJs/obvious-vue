@@ -162,8 +162,8 @@ const listenUnicast = (events) => {
 
 export default {
   beforeCreate () {
-    this.$socket = this.$root.$options.$socket
-    this.$bus = this.$root.$options.$bus
+    this.$socket = this.$root.$options.socket
+    this.$bus = this.$root.$options.bus
 
     const { obviousData, broadcast, unicast, socket: componentSocket } = this.$options
 

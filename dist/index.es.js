@@ -259,8 +259,8 @@ var mixin = {
   beforeCreate: function beforeCreate() {
     var _this = this;
 
-    this.$socket = this.$root.$options.$socket;
-    this.$bus = this.$root.$options.$bus;
+    this.$socket = this.$root.$options.socket;
+    this.$bus = this.$root.$options.bus;
     var _this$$options = this.$options,
         obviousData = _this$$options.obviousData,
         broadcast = _this$$options.broadcast,
