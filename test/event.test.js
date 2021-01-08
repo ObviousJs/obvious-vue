@@ -1,17 +1,19 @@
-import { mount, createLocalVue } from '@vue/test-utils'
+import { shallowMount, createLocalVue } from '@vue/test-utils'
 import EventTester from './components/event-tester.vue'
 import { localBus, globalBus } from './utils/bus'
 import ObviousVue from '../src/index'
 
 const localVue = createLocalVue()
-localVue.use(ObviousVue, {
-  bus: globalBus
-})
+localVue.use(ObviousVue)
+const Root = {
+  $bus: globalBus,
+  $socket: globalBus.createSocket()
+}
 
-describe('Test obvious.broadcast and obvious.unicast option', () => {
+describe('Test broadcast and unicast option', () => {
   const globalWatcherSocket = globalBus.createSocket()
   const localWatcherSocket = localBus.createSocket()
-  const wrapper = mount(EventTester, { localVue })
+  const wrapper = shallowMount(EventTester, { localVue, parentComponent: Root })
 
   test('# case 1: test broadcast event', async () => {
     console.warn = jest.fn()

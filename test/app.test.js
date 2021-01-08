@@ -4,11 +4,9 @@ import { globalBus } from './utils/bus'
 import ObviousVue from '../src/index'
 
 const localVue = createLocalVue()
-localVue.use(ObviousVue, {
-  bus: globalBus
-})
+localVue.use(ObviousVue)
 
-describe('Test obvious.broadcast and obvious.unicast option', () => {
+describe('Test the component: obvious-app', () => {
   let destroyed = false
   globalBus.createApp('test-app')
     .bootstrap(async (config) => {
@@ -26,7 +24,7 @@ describe('Test obvious.broadcast and obvious.unicast option', () => {
 
   test('# case 1: mount an app and activate it', async () => {
     console.log = jest.fn()
-    const wrapper = mount(AppTester, { localVue })
+    const wrapper = mount(AppTester, { localVue, $bus: globalBus, $socket: globalBus.createSocket() })
     await localVue.nextTick()
     expect(wrapper.find('#title').text()).toEqual('1')
     expect(wrapper.find('h1').exists()).toBeTruthy()

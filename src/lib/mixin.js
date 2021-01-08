@@ -118,7 +118,7 @@ const formatBroadcast = (broadcast, context) => {
   for (const key of Object.keys(broadcast)) {
     if (Array.isArray(broadcast[key])) {
       result[key] = broadcast[key].map((event) => formatEvent(event, context))
-    } else if (typeof broadcast[key] === 'function') {
+    } else if (typeof broadcast[key] === 'function' || isObject(broadcast[key])) {
       result[key] = [formatEvent(broadcast[key], context)]
     }
   }
@@ -161,12 +161,16 @@ const listenUnicast = (events) => {
 }
 
 export default {
-  beforeCreate () {
-    this.$socket = this.$root.$options.socket
-    this.$bus = this.$root.$options.bus
-
+  beforeCreate() {
+    this.$socket = this.$root.$options.$socket
+    this.$bus = this.$root.$options.$bus
+    if (!this.$bus) {
+      throw new Error(Errors.busIsRequired())
+    }
+    if (!this.$socket) {
+      throw new Error(Errors.socketIsRequired())
+    }
     const { obviousData, broadcast, unicast, socket: componentSocket } = this.$options
-
     if (isObject(obviousData)) {
       this.$obStateWatcher = {}
       const { data: originalData, watch: originalWatch } = this.$options
@@ -182,14 +186,13 @@ export default {
         if (isObject(originalData)) {
           this.$options.data = dataOption
         } else {
-          this.$options.data = function () {
+          this.$options.data = function() {
             return dataOption
           }
         }
         this.$options.watch = watchOption
       })
     }
-
     if (isObject(broadcast)) {
       this.$broadcastEvents = formatBroadcast(broadcast, this)
       listenBroadcast(this.$broadcastEvents)
@@ -201,7 +204,7 @@ export default {
     }
   },
 
-  beforeDestroy () {
+  beforeDestroy() {
     // clear obvious state watcher
     isObject(this.$obStateWatcher) && Object.keys(this.$obStateWatcher).forEach((stateName) => {
       const { socket, handler } = this.$obStateWatcher[stateName]

@@ -12,32 +12,29 @@ const localSocket = localBus.createSocket()
 export default {
   name: 'EventTester',
 
-  data () {
+  data() {
     return {
       broadcastCount: 0,
       unicastCount: 0
     }
   },
 
-  obvious () {
-    return {
-      broadcast: {
-        testBroadcast: () => {
-          this.broadcastCount++
-        },
-        testBroadcastWithLocalSocket: {
-          handler: () => {
-            this.broadcastCount++
-          },
-          socket: localSocket
-        }
+  broadcast: {
+    testBroadcast() {
+      this.broadcastCount++
+    },
+    testBroadcastWithLocalSocket: {
+      handler() {
+        this.broadcastCount++
       },
-      unicast: {
-        testUnicast: () => {
-          this.unicastCount++
-          return this.unicastCount
-        }
-      }
+      socket: localSocket
+    }
+  },
+
+  unicast: {
+    testUnicast() {
+      this.unicastCount++
+      return this.unicastCount
     }
   }
 }

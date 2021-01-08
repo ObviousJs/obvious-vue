@@ -13,25 +13,21 @@ const localSocket = localBus.createSocket()
 export default {
   name: 'StateTester',
 
-  data () {
+  data() {
     return {
       age: 11
     }
   },
 
-  obvious () {
-    return {
-      data: {
-        user: 'user.name',
-        theme: {
-          state: 'theme',
-          socket: localSocket
-        }
-      }
+  obviousData: {
+    user: 'user.name',
+    theme: {
+      state: 'theme',
+      socket: localSocket
     }
   },
 
-  created () {
+  created() {
     localSocket.initState('theme', 'light', true)
   }
 }

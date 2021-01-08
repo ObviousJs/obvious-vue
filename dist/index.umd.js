@@ -51,10 +51,10 @@
   };
   var Errors = {
     busIsRequired: function busIsRequired() {
-      return '[obvious-vue] the bus must be provided';
+      return '[obvious-vue] $bus must be provided on the root Vue instance';
     },
     socketIsRequired: function socketIsRequired() {
-      return '[obvious-vue] the socket must be provided';
+      return '[obvious-vue] $socket must be provided on the root Vue instance';
     },
     stateIsRequired: function stateIsRequired(dataName) {
       return "[obvious-vue] state is required in obviousData.".concat(dataName);
@@ -213,7 +213,7 @@
         result[key] = broadcast[key].map(function (event) {
           return formatEvent(event, context);
         });
-      } else if (typeof broadcast[key] === 'function') {
+      } else if (typeof broadcast[key] === 'function' || isObject(broadcast[key])) {
         result[key] = [formatEvent(broadcast[key], context)];
       }
     }
@@ -265,8 +265,17 @@
     beforeCreate: function beforeCreate() {
       var _this = this;
 
-      this.$socket = this.$root.$options.socket;
-      this.$bus = this.$root.$options.bus;
+      this.$socket = this.$root.$options.$socket;
+      this.$bus = this.$root.$options.$bus;
+
+      if (!this.$bus) {
+        throw new Error(Errors.busIsRequired());
+      }
+
+      if (!this.$socket) {
+        throw new Error(Errors.socketIsRequired());
+      }
+
       var _this$$options = this.$options,
           obviousData = _this$$options.obviousData,
           broadcast = _this$$options.broadcast,
@@ -352,6 +361,27 @@
     }
   };
 
+  var broadcastMerge = function broadcastMerge(parentVal, childVal, vm) {
+    if (!childVal) {
+      return parentVal;
+    }
+
+    if (!parentVal) {
+      return childVal;
+    }
+
+    var result = parentVal;
+    Object.keys(childVal).forEach(function (eventName) {
+      if (!result[eventName]) {
+        result[eventName] = childVal[eventName];
+      } else {
+        var unflatedHandlers = [result[eventName], childVal[eventName]];
+        result[eventName] = unflatedHandlers.flat();
+      }
+    });
+    return result;
+  };
+
   function ownKeys$1(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
   function _objectSpread$1(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys$1(Object(source), true).forEach(function (key) { defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys$1(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
@@ -430,8 +460,11 @@
 
   var index = {
     install: function install(Vue) {
-      var watcherMerge = Vue.config.optionMergeStrategies.watch;
-      Vue.config.optionMergeStrategies.broadcast = watcherMerge;
+      var normalMerge = Vue.config.optionMergeStrategies.methods;
+      Vue.config.optionMergeStrategies.socket = normalMerge;
+      Vue.config.optionMergeStrategies.obviousData = normalMerge;
+      Vue.config.optionMergeStrategies.unicast = normalMerge;
+      Vue.config.optionMergeStrategies.broadcast = broadcastMerge;
       Vue.mixin(mixin);
       Vue.component('obvious-app', ObviousApp);
     }
