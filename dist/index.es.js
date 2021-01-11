@@ -91,11 +91,11 @@ var formatObviousData = function formatObviousData(obData) {
   return result;
 };
 
-var initNewData = function initNewData(originalData) {
+var initNewData = function initNewData(originalData, context) {
   var newData = {};
 
   if (typeof originalData === 'function') {
-    newData = _objectSpread({}, originalData());
+    newData = _objectSpread({}, originalData.call(context));
   } else if (isObject(originalData)) {
     newData = _objectSpread({}, originalData);
   }
@@ -281,7 +281,7 @@ var mixin = {
       var _this$$options2 = this.$options,
           originalData = _this$$options2.data,
           originalWatch = _this$$options2.watch;
-      var dataOption = initNewData(originalData);
+      var dataOption = initNewData(originalData, this);
       var watchOption = originalWatch ? _objectSpread({}, originalWatch) : {};
       var obData = formatObviousData(obviousData);
       Object.keys(obData).forEach(function (dataName) {

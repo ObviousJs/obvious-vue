@@ -27,11 +27,11 @@ const formatObviousData = (obData) => {
   return result
 }
 
-const initNewData = (originalData) => {
+const initNewData = (originalData, context) => {
   let newData = {}
   if (typeof originalData === 'function') {
     newData = {
-      ...originalData()
+      ...originalData.call(context)
     }
   } else if (isObject(originalData)) {
     newData = {
@@ -174,7 +174,7 @@ export default {
     if (isObject(obviousData)) {
       this.$obStateWatcher = {}
       const { data: originalData, watch: originalWatch } = this.$options
-      const dataOption = initNewData(originalData)
+      const dataOption = initNewData(originalData, this)
       const watchOption = originalWatch ? { ...originalWatch } : {}
       const obData = formatObviousData(obviousData)
       Object.keys(obData).forEach((dataName) => {

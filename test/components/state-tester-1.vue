@@ -27,6 +27,12 @@ export default {
     }
   },
 
+  watch: {
+    user(value) {
+      this.$emit('userChanged')
+    }
+  },
+
   created() {
     localSocket.initState('theme', 'light', true)
   }

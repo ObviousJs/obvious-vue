@@ -48,6 +48,8 @@ describe('Test obviousData option', () => {
     expect(console.log).toHaveBeenCalledWith('dark')
     expect(console.log).toHaveBeenCalledWith('jack')
     expect(console.log).toHaveBeenCalledWith('Bob')
+    // expect(wrapper.emitted('userChanged').length).toEqual(2)
+    wrapper.destroy()
   })
 
   test('# case 2: indicate state socket and component socket', async () => {
@@ -77,5 +79,6 @@ describe('Test obviousData option', () => {
     expect(console.warn).toHaveBeenCalledWith(2)
     expect(console.warn).toHaveBeenCalledWith('male')
     expect(console.warn).toHaveBeenCalledWith('none')
+    wrapper.destroy()
   })
 })
