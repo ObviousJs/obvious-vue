@@ -1,23 +1,14 @@
 import mixin from './lib/mixin'
+import broadcastMerge from './lib/broadcastMergeStrategy'
 import ObviousApp from './component/obvious-app'
-import mergeStrategy from './lib/mergeStrategy'
-import { Errors } from './lib/util'
 
 export default {
-  install (Vue, option) {
-    const { bus } = option
-    if (!bus) {
-      throw new Error(Errors.busIsRequired())
-    }
-    const defaultSocket = bus.createSocket()
-
-    Vue.prototype.$bus = bus
-    Vue.prototype.$socket = defaultSocket
-
-    const merge = Vue.config.optionMergeStrategies.methods
-
-    Vue.config.optionMergeStrategies.obvious = mergeStrategy(merge, defaultSocket, Vue.prototype)
-
+  install(Vue) {
+    const normalMerge = Vue.config.optionMergeStrategies.methods
+    Vue.config.optionMergeStrategies.socket = normalMerge
+    Vue.config.optionMergeStrategies.obviousData = normalMerge
+    Vue.config.optionMergeStrategies.unicast = normalMerge
+    Vue.config.optionMergeStrategies.broadcast = broadcastMerge
     Vue.mixin(mixin)
     Vue.component('obvious-app', ObviousApp)
   }

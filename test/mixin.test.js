@@ -1,12 +1,14 @@
-import { mount, createLocalVue } from '@vue/test-utils'
+import { shallowMount, createLocalVue } from '@vue/test-utils'
 import mixinTester from './components/mixin-tester.vue'
 import { localBus, globalBus } from './utils/bus'
 import ObviousVue from '../src/index'
 
 const localVue = createLocalVue()
-localVue.use(ObviousVue, {
-  bus: globalBus
-})
+localVue.use(ObviousVue)
+const Root = {
+  $bus: globalBus,
+  $socket: globalBus.createSocket()
+}
 
 describe('Test mixin', () => {
   test('# case 1: test mixin', async () => {
@@ -36,7 +38,7 @@ describe('Test mixin', () => {
       stateValue.local2 = value
     })
 
-    const wrapper = mount(mixinTester, { localVue })
+    const wrapper = shallowMount(mixinTester, { localVue, parentComponent: Root })
     await localVue.nextTick()
     expect(wrapper.vm.localState1).toEqual('localState1')
     expect(wrapper.vm.localState2).toEqual('localState2')
@@ -56,10 +58,11 @@ describe('Test mixin', () => {
     localWatcherSocket.broadcast('localBroadcast')
     localWatcherSocket.unicast('localUnicast')
 
-    expect(console.log).toHaveBeenCalledTimes(4)
+    expect(console.log).toHaveBeenCalledTimes(5)
     expect(console.log).toHaveBeenCalledWith('globalBroadcast in child')
     expect(console.log).toHaveBeenCalledWith('localBroadcast in child')
+    expect(console.log).toHaveBeenCalledWith('localBroadcast in parent')
     expect(console.log).toHaveBeenCalledWith('globalUnicast in child')
-    expect(console.log).toHaveBeenCalledWith('localUnicast in parent')
+    expect(console.log).toHaveBeenCalledWith('localUnicast in child')
   })
 })

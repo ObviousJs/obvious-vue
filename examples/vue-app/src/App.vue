@@ -27,16 +27,19 @@ export default {
     }
   },
 
-  obvious() {
-    return {
-      data: {
-        text: 'text'
-      },
-      broadcast: {
-        setReactAreaVisible(visible) {
-          this.showReactApp = visible
-        }
-      }
+  obviousData: {
+    text: 'text'
+  },
+
+  watch: {
+    user(value) {
+      this.$emit('userChanged')
+    }
+  },
+
+  broadcast: {
+    setReactAreaVisible(visible) {
+      this.showReactApp = visible
     }
   },
 

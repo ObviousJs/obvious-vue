@@ -6,22 +6,19 @@
 </template>
 
 <script>
-import { localBus } from '../utils/bus'
+import { localBus, globalBus } from '../utils/bus'
 const localSocket = localBus.createSocket()
 
 export default {
   name: 'StateTester',
 
-  obvious () {
-    return {
-      socket: localSocket,
-      data: {
-        count: 'count',
-        gender: {
-          state: 'user.gender',
-          socket: this.$socket
-        }
-      }
+  socket: localSocket,
+
+  obviousData: {
+    count: 'count',
+    gender: {
+      state: 'user.gender',
+      socket: globalBus.createSocket()
     }
   }
 }

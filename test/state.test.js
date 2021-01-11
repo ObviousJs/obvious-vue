@@ -1,22 +1,24 @@
-import { mount, createLocalVue } from '@vue/test-utils'
+import { shallowMount, createLocalVue } from '@vue/test-utils'
 import StateTester1 from './components/state-tester-1.vue'
 import StateTester2 from './components/state-tester-2.vue'
 import { localBus, globalBus } from './utils/bus'
 import ObviousVue from '../src/index'
 
 const localVue = createLocalVue()
-localVue.use(ObviousVue, {
-  bus: globalBus
-})
+localVue.use(ObviousVue)
+const Root = {
+  $bus: globalBus,
+  $socket: globalBus.createSocket()
+}
 
-describe('Test obvious.data option', () => {
+describe('Test obviousData option', () => {
   const globalWatcherSocket = globalBus.createSocket()
   const localWatcherSocket = localBus.createSocket()
   globalWatcherSocket.initState('user', {
     name: 'mike'
   })
   test('# case 1: indicate state socket and global socket', async () => {
-    const wrapper = mount(StateTester1, { localVue })
+    const wrapper = shallowMount(StateTester1, { localVue, parentComponent: Root })
     await localVue.nextTick()
     expect(wrapper.vm.theme).toEqual(localWatcherSocket.getState('theme'))
     expect(wrapper.vm.user).toEqual(globalWatcherSocket.getState('user.name'))
@@ -46,10 +48,12 @@ describe('Test obvious.data option', () => {
     expect(console.log).toHaveBeenCalledWith('dark')
     expect(console.log).toHaveBeenCalledWith('jack')
     expect(console.log).toHaveBeenCalledWith('Bob')
+    // expect(wrapper.emitted('userChanged').length).toEqual(2)
+    wrapper.destroy()
   })
 
   test('# case 2: indicate state socket and component socket', async () => {
-    const wrapper = mount(StateTester2, { localVue })
+    const wrapper = shallowMount(StateTester2, { localVue, parentComponent: Root })
     globalWatcherSocket.setState('user.gender', 'female')
     localWatcherSocket.initState('count', 1)
     await localVue.nextTick()
@@ -75,5 +79,6 @@ describe('Test obvious.data option', () => {
     expect(console.warn).toHaveBeenCalledWith(2)
     expect(console.warn).toHaveBeenCalledWith('male')
     expect(console.warn).toHaveBeenCalledWith('none')
+    wrapper.destroy()
   })
 })

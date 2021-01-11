@@ -1,9 +1,9 @@
 # obvious-vue
-[![Coverage Status](https://coveralls.io/repos/github/ObviousJs/obvious-vue/badge.svg?branch=main)](https://coveralls.io/github/ObviousJs/obvious-vue?branch=main) [![release](https://img.shields.io/github/release/ObviousJs/obvious-vue.svg)](https://github.com/ObviousJs/obvious-vue/releases) [![lastCommit](https://img.shields.io/github/last-commit/ObviousJs/obvious-vue)](https://github.com/ObviousJs/obvious-vue/commits/master) [![](https://img.shields.io/badge/document-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-brightgreen)](https://github.com/ObviousJs/obvious-vue/blob/main/README.zh.md)
+[![Coverage Status](https://coveralls.io/repos/github/ObviousJs/obvious-vue/badge.svg?branch=main)](https://coveralls.io/github/ObviousJs/obvious-vue?branch=main) [![release](https://img.shields.io/github/release/ObviousJs/obvious-vue.svg)](https://github.com/ObviousJs/obvious-vue/releases) [![lastCommit](https://img.shields.io/github/last-commit/ObviousJs/obvious-vue)](https://github.com/ObviousJs/obvious-vue/commits/main) [![](https://img.shields.io/badge/document-english-brightgreen)](https://github.com/ObviousJs/obvious-vue/blob/main/README.md)
 
-The official library to help you use [obvious](https://github.com/ObviousJs/obvious-core) in Vue application
+在Vue应用中轻松使用[obvious](https://github.com/ObviousJs/obvious-core)的库
 
-## Install
+## 安装
 npm:
 ```
 npm install vue obvious-vue
@@ -20,8 +20,9 @@ import ObviousVue from 'obvious-vue'
 Vue.use(ObviousVue)
 ```
 
-## Usage
-You should provide the $bus and $socket on the root, and they will be injected into all the child components and will be available on them as `this.$bus` and `this.$socket`
+## 使用
+
+在安装了ObviousVue插件后，你应该在Vue根组件中提供$bus和$socket, 它们将会被注入到该根组件下的所有子组件中，你可以在组件中通过`this.$bus`和`this.$socket`访问它们
 
 ```js
 const $bus = window.__Bus__.host
@@ -34,8 +35,8 @@ const app = new Vue({
 
 app.$mount(document.getElementById('root'))
 ```
-### state
-You can declare the obviousData option to perform the two-way binding for Vue data and obvious state
+### 状态
+你可以在组件中声明`obviousData`属性来实现Vue的data和obvious的状态的双向绑定
 
 ```vue
 <template>
@@ -60,8 +61,8 @@ export default {
 </script>
 ```
 
-### broadcast and unicast
-You can declare the broadcast and unicast option to register some broadcast and unicast events for obvious
+### broadcast 和 unicast
+你可以在组件中声明`broadcast`和`unicast`属性来注册obvious的广播和单播事件
 
 ```vue
 <template>
@@ -108,14 +109,14 @@ export default {
 </script>
 ```
 
-### set the default socket
-The default socket to handle all states and events is this.$socket, you can change it by declare the socket option
+### 设置默认socket
+默认情况下，如果没有给状态和事件特别指定socket，组件内部将通过`this.$socket`操作状态和事件，你也可以在组件定义中声明`socket`属性来更改这个默认socket
 
 ```vue
 <script>
 const anotherSocket = window.__Bus__.anotherBus.createSocket()
 export default {
-  socket,
+  socket: anotherSocket,
 
   obviousData: {
     name: 'name' // Two-way binding for this.name and anotherSocket.getState('name')
@@ -132,8 +133,8 @@ export default {
 </script>
 ```
 
-### activate obvious app
-after using ObviousVue, there will be a global component named obvious-app to help you easily activate an obvious app, the app will be bootstrapped when the component is mounted and will be reactivated once the props activate-config is changed, and when the component is destroyed, the app will be destroyed too 
+### 激活app
+ObviousVue注册了一个全局组件`obvious-app`，当组件被挂载以及activateConfig属性有变更时，app将被激活，当组件卸载时，app也将被卸载
 
 ```js
 const bus = window.__Bus__.host
@@ -175,24 +176,24 @@ export default {
 }
 </script>
 ```
-all the props and events of obvious-app are below
+obvious-app的所有属性如下
 
-props:
+属性:
 
-|name|required|default|description|
+|名称|是否必选|默认值|描述|
 |----|----|-------|-----------|
-|bus|false|this.$bus|the bus to activate the target app|
-|name|true| - |the name of the app to activate|
-|activate-config|false|{}| the config argument of activating|
-|destroy-config|false|{}| the config argument of destroying|
+|bus|否|this.$bus|用来激活app的bus|
+|name|是| - |要激活的app的名字|
+|activate-config|否|{}|app的激活参数，每次参数变更都会触发一次激活|
+|destroy-config|否|{}|app的销毁参数|
 
-events:
+事件:
 
-|name|description|
+|名称|描述|
 |----|-----------|
-|activated|emitted after the app is activated|
-|destroyed|emitted after the app is destroyed|
-|error|emmited when an error is throwed during activating or destroying|
+|activated|app被激活后触发|
+|destroyed|app被销毁后触发|
+|error|app激活或销毁过程中出错时触发|
 
 ## License
 obvious-vue is MIT licensed

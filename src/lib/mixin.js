@@ -5,7 +5,8 @@ const EVENT_TYPE = {
   UNICAST: 'Unicast'
 }
 
-export const formatObData = (obData) => {
+// --------------------------- state ---------------------------- //
+const formatObviousData = (obData) => {
   const result = {}
   for (const key of Object.keys(obData)) {
     const value = obData[key]
@@ -26,37 +27,11 @@ export const formatObData = (obData) => {
   return result
 }
 
-const formatEvents = (events, context) => {
-  const result = {}
-  for (const key of Object.keys(events)) {
-    const value = events[key]
-    if (typeof value === 'function') {
-      const socket = context.$options.obvious.socket ?? context.$socket
-      result[key] = {
-        socket,
-        handler: (...args) => {
-          const result = value.call(context, ...args)
-          return result
-        }
-      }
-    } else {
-      const socket = value.socket ?? context.$options.obvious.socket ?? context.$socket
-      result[key] = {
-        socket,
-        handler: (...args) => {
-          return value.handler.call(context, ...args)
-        }
-      }
-    }
-  }
-  return result
-}
-
-const initNewData = (originalData) => {
+const initNewData = (originalData, context) => {
   let newData = {}
   if (typeof originalData === 'function') {
     newData = {
-      ...originalData()
+      ...originalData.call(context)
     }
   } else if (isObject(originalData)) {
     newData = {
@@ -116,66 +91,120 @@ const injectStateWatcher = (dataName, socket, state, context) => {
   })
 }
 
-const listenEvents = (type, events) => {
-  Object.keys(events).forEach((eventName) => {
-    const { handler, socket } = events[eventName]
+// --------------------------- Events ---------------------------- //
+const formatEvent = (event, context) => {
+  let result = {}
+  const defaultSocket = context.$options.socket ?? context.$socket
+  if (typeof event === 'function') {
+    result = {
+      socket: defaultSocket,
+      handler: (...args) => {
+        return event.call(context, ...args)
+      }
+    }
+  } else if (isObject(event) && typeof event.handler === 'function') {
+    result = {
+      socket: event.socket ?? defaultSocket,
+      handler: (...args) => {
+        return event.handler.call(context, ...args)
+      }
+    }
+  }
+  return result
+}
+
+const formatBroadcast = (broadcast, context) => {
+  const result = {}
+  for (const key of Object.keys(broadcast)) {
+    if (Array.isArray(broadcast[key])) {
+      result[key] = broadcast[key].map((event) => formatEvent(event, context))
+    } else if (typeof broadcast[key] === 'function' || isObject(broadcast[key])) {
+      result[key] = [formatEvent(broadcast[key], context)]
+    }
+  }
+  return result
+}
+
+const formatUnicast = (unicast, context) => {
+  const result = {}
+  for (const key of Object.keys(unicast)) {
+    result[key] = formatEvent(unicast[key], context)
+  }
+  return result
+}
+
+const listenEvent = (type, eventName, option) => {
+  const { handler, socket } = option
+  if (socket && typeof handler === 'function') {
     socket[`on${type}`](eventName, handler)
-  })
+  }
+}
+
+const listenBroadcast = (events) => {
+  if (isObject(events)) {
+    Object.keys(events).forEach((eventName) => {
+      const listenerOptions = events[eventName]
+      listenerOptions.forEach((option) => {
+        listenEvent(EVENT_TYPE.BROADCAST, eventName, option)
+      })
+    })
+  }
+}
+
+const listenUnicast = (events) => {
+  if (isObject(events)) {
+    Object.keys(events).forEach((eventName) => {
+      const option = events[eventName]
+      listenEvent(EVENT_TYPE.UNICAST, eventName, option)
+    })
+  }
 }
 
 export default {
-  beforeCreate () {
-    this.$obStateWatcher = {}
-    const { data: originalData, watch: originalWatch, obvious: _obvious } = this.$options
-    if (_obvious && typeof _obvious !== 'function') {
-      throw new Error(Errors.obviousIsNotFunction())
+  beforeCreate() {
+    this.$socket = this.$root.$options.$socket
+    this.$bus = this.$root.$options.$bus
+    if (!this.$bus) {
+      throw new Error(Errors.busIsRequired())
     }
-    const obvious = _obvious && _obvious.call(this)
-    if (isObject(obvious)) {
-      const dataOption = initNewData(originalData)
+    if (!this.$socket) {
+      throw new Error(Errors.socketIsRequired())
+    }
+    const { obviousData, broadcast, unicast, socket: componentSocket } = this.$options
+    if (isObject(obviousData)) {
+      this.$obStateWatcher = {}
+      const { data: originalData, watch: originalWatch } = this.$options
+      const dataOption = initNewData(originalData, this)
       const watchOption = originalWatch ? { ...originalWatch } : {}
-      const {
-        socket: componentSocket,
-        data: originalObData,
-        broadcast,
-        unicast
-      } = obvious
-
-      // inject data and watch
-      if (isObject(originalObData)) {
-        const obData = formatObData(originalObData)
-        Object.keys(obData).forEach((dataName) => {
-          const { state, socket: stateSocket } = obData[dataName]
-          const socket = stateSocket ?? componentSocket ?? this.$socket
-          injectObData(dataOption, dataName, socket, state)
-          injectObDataWatcher(watchOption, dataName, socket, state, this)
-          injectStateWatcher(dataName, socket, state, this)
-        })
+      const obData = formatObviousData(obviousData)
+      Object.keys(obData).forEach((dataName) => {
+        const { state, socket: stateSocket } = obData[dataName]
+        const socket = stateSocket ?? componentSocket ?? this.$socket
+        injectObData(dataOption, dataName, socket, state)
+        injectObDataWatcher(watchOption, dataName, socket, state, this)
+        injectStateWatcher(dataName, socket, state, this)
         if (isObject(originalData)) {
           this.$options.data = dataOption
         } else {
-          this.$options.data = function () {
+          this.$options.data = function() {
             return dataOption
           }
         }
         this.$options.watch = watchOption
-      }
+      })
+    }
+    if (isObject(broadcast)) {
+      this.$broadcastEvents = formatBroadcast(broadcast, this)
+      listenBroadcast(this.$broadcastEvents)
+    }
 
-      // listen broadcast
-      if (isObject(broadcast)) {
-        this.$broadcastEvents = formatEvents(broadcast, this)
-        listenEvents(EVENT_TYPE.BROADCAST, this.$broadcastEvents)
-      }
-
-      // listen unicast
-      if (isObject(unicast)) {
-        this.$unicastEvents = formatEvents(unicast, this)
-        listenEvents(EVENT_TYPE.UNICAST, this.$unicastEvents)
-      }
+    if (isObject(unicast)) {
+      this.$unicastEvents = formatUnicast(unicast, this)
+      listenUnicast(this.$unicastEvents)
     }
   },
 
-  beforeDestroy () {
+  beforeDestroy() {
     // clear obvious state watcher
     isObject(this.$obStateWatcher) && Object.keys(this.$obStateWatcher).forEach((stateName) => {
       const { socket, handler } = this.$obStateWatcher[stateName]
@@ -183,13 +212,20 @@ export default {
     })
     // clear broadcast event handler
     isObject(this.$broadcastEvents) && Object.keys(this.$broadcastEvents).forEach((eventName) => {
-      const { socket, handler } = this.$broadcastEvents[eventName]
-      socket.offBroadcast(eventName, handler)
+      const watchers = this.$broadcastEvents[eventName]
+      watchers.forEach((option) => {
+        const { handler, socket } = option
+        if (socket && typeof handler === 'function') {
+          socket.offBroadcast(eventName, handler)
+        }
+      })
     })
     // clear unicast event handler
     isObject(this.$unicastEvents) && Object.keys(this.$unicastEvents).forEach((eventName) => {
       const { socket, handler } = this.$unicastEvents[eventName]
-      socket.offUnicast(eventName, handler)
+      if (socket && typeof handler === 'function') {
+        socket.offUnicast(eventName, handler)
+      }
     })
     this.$obStateWatcher = null
     this.$broadcastEvents = null
