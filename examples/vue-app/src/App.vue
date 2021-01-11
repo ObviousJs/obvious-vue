@@ -31,6 +31,12 @@ export default {
     text: 'text'
   },
 
+  watch: {
+    user(value) {
+      this.$emit('userChanged')
+    }
+  },
+
   broadcast: {
     setReactAreaVisible(visible) {
       this.showReactApp = visible
