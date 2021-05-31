@@ -50,12 +50,21 @@ const injectObData = (dataOption, dataName, socket, state) => {
 const injectObDataWatcher = (watchOption, dataName, socket, state, context) => {
   const rootStateName = state.split('.')[0]
   const handler = (newValue, oldValue) => {
-    if (context.$obStateWatcher && !context.$obStateWatcher[state]?.stateChanged) {
-      const { handler } = context.$obStateWatcher[state]
+    const $obStateWatchers = context.$obStateWatcher || {}
+    const $watcher = $obStateWatchers[state]
+    if (!$watcher.stateChanged) {
+      const { handler } = $watcher
       socket.waitState([rootStateName]).then(() => {
-        socket.unwatchState(state, handler)
+        // 当setState会导致组件卸载时，handlerDestroyed标志位用来防止在destroyed钩子中二次unwatch
+        if (!$watcher.handlerDestroyed) {
+          socket.unwatchState(state, handler)
+          $watcher.handlerDestroyed = true
+        }
         socket.setState(state, newValue)
-        socket.watchState(state, handler)
+        if ($watcher.handlerDestroyed && !context.$isDestroyed) {
+          socket.watchState(state, handler)
+          $watcher.handlerDestroyed = false
+        }
       })
     }
 
@@ -78,15 +87,17 @@ const injectStateWatcher = (dataName, socket, state, context) => {
     socket.waitState([rootStateName]).then(() => {
       context[dataName] = socket.getState(state)
       const handler = (newValue) => {
+        // 为了防止handler中更改data后，触发watch中再次调用setState的逻辑
         context.$obStateWatcher[state].stateChanged = true
         context[dataName] = newValue
       }
+      socket.watchState(state, handler)
       context.$obStateWatcher[state] = {
         socket,
         handler,
-        stateChanged: false
+        stateChanged: false,
+        handlerDestroyed: false
       }
-      socket.watchState(state, handler)
     })
   })
 }
@@ -164,6 +175,7 @@ export default {
   beforeCreate() {
     this.$socket = this.$root.$options.$socket
     this.$bus = this.$root.$options.$bus
+    this.$isDestroyed = false
     if (!this.$bus) {
       throw new Error(Errors.busIsRequired())
     }
@@ -204,11 +216,11 @@ export default {
     }
   },
 
-  beforeDestroy() {
+  destroyed() {
     // clear obvious state watcher
     isObject(this.$obStateWatcher) && Object.keys(this.$obStateWatcher).forEach((stateName) => {
-      const { socket, handler } = this.$obStateWatcher[stateName]
-      socket.unwatchState(stateName, handler)
+      const { socket, handler, handlerDestroyed } = this.$obStateWatcher[stateName]
+      !handlerDestroyed && socket.unwatchState(stateName, handler)
     })
     // clear broadcast event handler
     isObject(this.$broadcastEvents) && Object.keys(this.$broadcastEvents).forEach((eventName) => {
@@ -230,5 +242,6 @@ export default {
     this.$obStateWatcher = null
     this.$broadcastEvents = null
     this.$unicastEvents = null
+    this.$isDestroyed = true
   }
 }

@@ -113,14 +113,24 @@ var injectObDataWatcher = function injectObDataWatcher(watchOption, dataName, so
   var rootStateName = state.split('.')[0];
 
   var handler = function handler(newValue, oldValue) {
-    var _context$$obStateWatc;
+    var $obStateWatchers = context.$obStateWatcher || {};
+    var $watcher = $obStateWatchers[state];
 
-    if (context.$obStateWatcher && !((_context$$obStateWatc = context.$obStateWatcher[state]) !== null && _context$$obStateWatc !== void 0 && _context$$obStateWatc.stateChanged)) {
-      var _handler = context.$obStateWatcher[state].handler;
+    if (!$watcher.stateChanged) {
+      var _handler = $watcher.handler;
       socket.waitState([rootStateName]).then(function () {
-        socket.unwatchState(state, _handler);
+        // 当setState会导致组件卸载时，handlerDestroyed标志位用来防止在destroyed钩子中二次unwatch
+        if (!$watcher.handlerDestroyed) {
+          socket.unwatchState(state, _handler);
+          $watcher.handlerDestroyed = true;
+        }
+
         socket.setState(state, newValue);
-        socket.watchState(state, _handler);
+
+        if ($watcher.handlerDestroyed && !context.$isDestroyed) {
+          socket.watchState(state, _handler);
+          $watcher.handlerDestroyed = false;
+        }
       });
     }
 
@@ -145,16 +155,18 @@ var injectStateWatcher = function injectStateWatcher(dataName, socket, state, co
       context[dataName] = socket.getState(state);
 
       var handler = function handler(newValue) {
+        // 为了防止handler中更改data后，触发watch中再次调用setState的逻辑
         context.$obStateWatcher[state].stateChanged = true;
         context[dataName] = newValue;
       };
 
+      socket.watchState(state, handler);
       context.$obStateWatcher[state] = {
         socket: socket,
         handler: handler,
-        stateChanged: false
+        stateChanged: false,
+        handlerDestroyed: false
       };
-      socket.watchState(state, handler);
     });
   });
 }; // --------------------------- Events ---------------------------- //
@@ -261,6 +273,7 @@ var mixin = {
 
     this.$socket = this.$root.$options.$socket;
     this.$bus = this.$root.$options.$bus;
+    this.$isDestroyed = false;
 
     if (!this.$bus) {
       throw new Error(Errors.busIsRequired());
@@ -317,15 +330,16 @@ var mixin = {
       listenUnicast(this.$unicastEvents);
     }
   },
-  beforeDestroy: function beforeDestroy() {
+  destroyed: function destroyed() {
     var _this2 = this;
 
     // clear obvious state watcher
     isObject(this.$obStateWatcher) && Object.keys(this.$obStateWatcher).forEach(function (stateName) {
       var _this2$$obStateWatche = _this2.$obStateWatcher[stateName],
           socket = _this2$$obStateWatche.socket,
-          handler = _this2$$obStateWatche.handler;
-      socket.unwatchState(stateName, handler);
+          handler = _this2$$obStateWatche.handler,
+          handlerDestroyed = _this2$$obStateWatche.handlerDestroyed;
+      !handlerDestroyed && socket.unwatchState(stateName, handler);
     }); // clear broadcast event handler
 
     isObject(this.$broadcastEvents) && Object.keys(this.$broadcastEvents).forEach(function (eventName) {
@@ -352,6 +366,7 @@ var mixin = {
     this.$obStateWatcher = null;
     this.$broadcastEvents = null;
     this.$unicastEvents = null;
+    this.$isDestroyed = true;
   }
 };
 
